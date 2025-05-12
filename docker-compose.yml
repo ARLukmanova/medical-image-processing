@@ -20,6 +20,9 @@ services:
       - PREDICTION_SERVICE_URL=http://localhost:8000/predict
     networks:
       - MyNet
+    ports:
+      - "8080:8501"
+
 
 
 networks:
