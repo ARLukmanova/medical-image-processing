@@ -11,6 +11,16 @@ services:
     networks:
       - MyNet
 
+  ui:
+    build:
+      context: ./streamlit-app/
+      dockerfile: Dockerfile
+    restart: on-failure
+    environment:
+      - PREDICTION_SERVICE_URL=http://localhost:8000/predict
+    networks:
+      - MyNet
+
 
 networks:
   MyNet:
