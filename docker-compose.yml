@@ -1,0 +1,17 @@
+services:
+  bot:
+    build:
+      context: ./tg-bot/
+      dockerfile: Dockerfile
+    restart: on-failure
+    environment:
+      - PREDICTION_SERVICE_URL=http://localhost:8000/predict
+    env_file:
+      - .env
+    networks:
+      - MyNet
+
+
+networks:
+  MyNet:
+    name: MyNet
