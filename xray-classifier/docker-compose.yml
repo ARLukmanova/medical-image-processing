@@ -153,6 +153,8 @@ services:
           echo
         fi
         exec /entrypoint airflow version
+        # exec /bin/bash -x /entrypoint airflow version
+        # tail -f /dev/null
     # yamllint enable rule:line-length
     environment:
       <<: *airflow-common-env
@@ -177,7 +179,7 @@ services:
       - -c
       - |
         pip install boto3 --quiet
-        mlflow server --host 0.0.0.0 --dev  --serve-artifacts
+        mlflow server --host 0.0.0.0  --serve-artifacts
     healthcheck:
       test: python -c "import http.client; conn = http.client.HTTPConnection('localhost', 5000, timeout=5); conn.request('GET', '/'); res = conn.getresponse(); exit(0 if res.status == 200 else 1)" || exit 1
       interval: 30s
