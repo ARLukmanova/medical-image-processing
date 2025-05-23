@@ -8,9 +8,6 @@ from airflow.operators.python import PythonOperator
 from airflow.providers.amazon.aws.hooks.s3 import S3Hook
 from airflow.utils.dates import days_ago
 
-_LOG = logging.getLogger()
-_LOG.addHandler(logging.StreamHandler())
-
 dag = DAG(
     dag_id="train-and-release-model",
     schedule_interval='0 1 * * *',
@@ -29,35 +26,34 @@ dag = DAG(
 )
 
 
-def configure_mlflow():
-    for key in [
-        "MLFLOW_TRACKING_URI",
-        "AWS_ENDPOINT_URL",
-        "AWS_ACCESS_KEY_ID",
-        "AWS_SECRET_ACCESS_KEY",
-        "AWS_DEFAULT_REGION",
-    ]:
-        os.environ[key] = Variable.get(key)
-    _LOG.info(os.getenv('MLFLOW_TRACKING_URI', 'NO_URI'))
+def fetch_data_with_dvc():
+    """Получение данных с помощью DVC"""
+    pass
 
+def train_model_with_mlflow():
+    """Обучение модели с логированием в MLFlow"""
+    pass
 
+def evaluate_and_register_model():
+    """Оценка модели и регистрация в MLFlow если качество улучшилось"""
+    pass
 
-def init() -> NoReturn:
-    print('Hello, DAG!')
-    bucket_name = Variable.get("S3_BUCKET")
-    _LOG.info(f"Hello, DAG! Bucket name is {bucket_name}")
-    configure_mlflow()
+fetch_data_task = PythonOperator(
+    task_id='fetch_data_from_dvc_remote',
+    python_callable=fetch_data_with_dvc,
+    dag=dag,
+)
 
+train_model_task = PythonOperator(
+    task_id='train_model_with_logging',
+    python_callable=train_model_with_mlflow,
+    dag=dag,
+)
 
-def use_s3(os=os) -> NoReturn:
-    _LOG.info(os.getenv('MLFLOW_TRACKING_URI', 'NO_URI'))
-    s3_hook = S3Hook("s3_connection")
-    bucket_name = Variable.get("S3_BUCKET")
-    import os
-    _LOG.info(os.getcwdb())
+evaluate_model_task = PythonOperator(
+    task_id='evaluate_and_register_model',
+    python_callable=evaluate_and_register_model,
+    dag=dag,
+)
 
-
-task_init = PythonOperator(task_id='init', python_callable=init, dag=dag)
-task_use_s3 = PythonOperator(task_id='use_s3', python_callable=use_s3, dag=dag)
-
-task_init >> task_use_s3
+fetch_data_task >> train_model_task >> evaluate_model_task
