@@ -3,6 +3,11 @@ import os
 from datetime import timedelta
 from typing import NoReturn
 
+import torch
+
+from data_loader import get_data_bundle, log_data_bundle
+from seed_initializer import seed_all, create_torch_generator, seed_worker
+
 from airflow.models import DAG, Variable
 from airflow.operators.python import PythonOperator
 from airflow.providers.amazon.aws.hooks.s3 import S3Hook
@@ -32,7 +37,22 @@ def fetch_data_with_dvc():
 
 def train_model_with_mlflow():
     """Обучение модели с логированием в MLFlow"""
-    pass
+    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+    seed_all()
+
+    clean_train_dir = "/opt/airflow/dags/datasets/chest_xray_clean/train"
+    test_dir = "/opt/airflow/dags/datasets/chest_xray_clean/test"
+
+    data = get_data_bundle(
+        clean_train_dir=clean_train_dir,
+        test_dir=test_dir,
+        generator=create_torch_generator(),
+        seed_worker_fn=seed_worker,
+        image_size=(224, 224),
+        batch_size=32,
+        num_workers=0,  # Установите на 0 для Airflow
+    )
+    log_data_bundle(data)
 
 def evaluate_and_register_model():
     """Оценка модели и регистрация в MLFlow если качество улучшилось"""
