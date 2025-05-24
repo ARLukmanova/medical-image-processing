@@ -10,6 +10,7 @@ from seed_initializer import seed_all, create_torch_generator, seed_worker
 
 from airflow.models import DAG, Variable
 from airflow.operators.python import PythonOperator
+from airflow.operators.bash import BashOperator
 from airflow.providers.amazon.aws.hooks.s3 import S3Hook
 from airflow.utils.dates import days_ago
 
@@ -30,18 +31,14 @@ dag = DAG(
     }
 )
 
-
-def fetch_data_with_dvc():
-    """Получение данных с помощью DVC"""
-    pass
-
 def train_model_with_mlflow():
     """Обучение модели с логированием в MLFlow"""
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     seed_all()
 
-    clean_train_dir = "/opt/airflow/dags/datasets/chest_xray_clean/train"
-    test_dir = "/opt/airflow/dags/datasets/chest_xray_clean/test"
+    b_folder = "~/medical-image-processing/xray-classifier/"
+    clean_train_dir = b_folder + "datasets/chest_xray_clean/train"
+    test_dir = b_folder + "datasets/chest_xray_clean/test"
 
     data = get_data_bundle(
         clean_train_dir=clean_train_dir,
@@ -54,13 +51,15 @@ def train_model_with_mlflow():
     )
     log_data_bundle(data)
 
+
 def evaluate_and_register_model():
     """Оценка модели и регистрация в MLFlow если качество улучшилось"""
     pass
 
-fetch_data_task = PythonOperator(
+
+fetch_data_task = BashOperator(
     task_id='fetch_data_from_dvc_remote',
-    python_callable=fetch_data_with_dvc,
+    bash_command='bash \'/opt/airflow/dags/pull_data_from_dvc.sh\'',
     dag=dag,
 )
 
