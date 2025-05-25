@@ -1,6 +1,7 @@
 import torch
 from torch.utils.data import DataLoader, random_split, ConcatDataset, Subset, WeightedRandomSampler
 from torchvision import transforms, datasets
+import mlflow
 
 
 class DatasetSizes:
@@ -155,15 +156,20 @@ def log_data_bundle(data_bundle: DataBundle):
     """
     Логирует информацию о загруженных данных.
     """
-    print("Dataset Sizes:")
-    print(f"  Train: {data_bundle.dataset_sizes.train}")
-    print(f"  Val: {data_bundle.dataset_sizes.val}")
-    print(f"  Test: {data_bundle.dataset_sizes.test}")
-
-    print("\nClass Information:")
-    for name, weight, count in zip(data_bundle.classes_info.names, data_bundle.classes_info.weights, data_bundle.classes_info.counts):
-        print(f"  Class: {name}, Weight: {weight:.4f}, Count: {count.item()}")
-
-    print("\nBatch dimension example:")
+    output = []
+    output.append("Dataset Sizes:")
+    output.append(f"  Train: {data_bundle.dataset_sizes.train}")
+    output.append(f"  Val: {data_bundle.dataset_sizes.val}")
+    output.append(f"  Test: {data_bundle.dataset_sizes.test}")
+    output.append("")
+    output.append("Class Information:")
+    for name, weight, count in zip(data_bundle.classes_info.names, data_bundle.classes_info.weights,
+                                   data_bundle.classes_info.counts):
+        output.append(f"  Class: {name}, Weight: {weight:.4f}, Count: {count.item()}")
+    output.append("")
+    output.append("Batch dimension example:")
     batch = next(iter(data_bundle.loaders.train))
-    print(f"  {batch[0].shape}")
+    output.append(f"  {batch[0].shape}")
+    text = '\n'.join(output)
+    mlflow.log_text(text, "data_bundle_info.txt")
+    print(text)
