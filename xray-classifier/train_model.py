@@ -15,9 +15,9 @@ def train_model_mlflow(model, train_loader, val_loader, criterion, optimizer, nu
     Возвращает лучшую модель по точности на валидационном наборе
     """
     # Создаем папки для сохранения моделей
-    os.makedirs("models", exist_ok=True)
-    os.makedirs("onnx_models", exist_ok=True)
-    os.makedirs("plots", exist_ok=True)
+    # os.makedirs("models", exist_ok=True)
+    # os.makedirs("onnx_models", exist_ok=True)
+    # os.makedirs("plots", exist_ok=True)
 
     best_accuracy = 0.0
     best_model_weights = None
