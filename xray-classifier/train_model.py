@@ -1,23 +1,50 @@
-import os
 import time
-
 import mlflow
 import torch
-import torchvision
-from mlflow.models import infer_signature
+import torch.nn as nn
+import torch.optim as optim
 from tqdm.asyncio import tqdm
+from hybrid_cnn_transformer import HybridCNNTransformer
+from parameters import NUM_EPOCHS, LEARNING_RATE
+
+def train_model(proj_path, data_bundle, device, model_name, dry_run=True):
+    model = HybridCNNTransformer.from_pretrained(
+        proj_path + 'pretrained/hybrid_oct.pth',
+        device=device,
+        num_classes=4)
+    model.change_num_classes(2, device)
+
+    optimizer = optim.AdamW(model.fc.parameters(), lr=LEARNING_RATE)
+    criterion = nn.CrossEntropyLoss(weight=data_bundle.classes_info.weights.to(device))
+
+    model, train_loss, train_acc, val_loss, val_acc = _run_train_loop(
+        model,
+        data_bundle.loaders.train,
+        data_bundle.loaders.val,
+        criterion,
+        optimizer,
+        num_epochs=NUM_EPOCHS,
+        model_name=model_name,
+        dry_run=dry_run
+    )
+    return model, train_loss, train_acc, val_loss, val_acc
 
 
-def train_model_mlflow(model, train_loader, val_loader, criterion, optimizer, num_epochs=5, model_name="best_model"):
+def _run_train_loop(
+        model,
+        train_loader,
+        val_loader,
+        criterion,
+        optimizer,
+        model_name,
+        num_epochs,
+        dry_run=True,
+):
     """
     Обучение модели с сохранением лучшей версии в PyTorch и ONNX форматах
     и комплексным логированием в MLflow.
     Возвращает лучшую модель по точности на валидационном наборе
     """
-    # Создаем папки для сохранения моделей
-    # os.makedirs("models", exist_ok=True)
-    # os.makedirs("onnx_models", exist_ok=True)
-    # os.makedirs("plots", exist_ok=True)
 
     best_accuracy = 0.0
     best_model_weights = None
@@ -25,16 +52,7 @@ def train_model_mlflow(model, train_loader, val_loader, criterion, optimizer, nu
     train_accuracies, val_accuracies = [], []
 
     total_start_time = time.time()
-    device = next(model.parameters()).device  # Получаем устройство модели
-
-    # Определяем требования для воспроизводимости
-    pip_requirements = [
-        f"torch=={torch.__version__}",
-        f"torchvision=={torchvision.__version__}",
-        "mlflow>=2.0"
-    ]
-
-    # Начинаем эксперимент MLflow
+    device = next(model.parameters()).device
 
     # Устанавливаем базовые теги
     mlflow.set_tags({
@@ -55,10 +73,6 @@ def train_model_mlflow(model, train_loader, val_loader, criterion, optimizer, nu
         "batch_size": train_loader.batch_size
     })
 
-    # Подготовка примера данных для сигнатуры модели
-    sample_batch = next(iter(train_loader))
-    sample_input = sample_batch[0][0].unsqueeze(0).to(device)
-
     for epoch in range(num_epochs):
         epoch_start_time = time.time()
 
@@ -66,42 +80,45 @@ def train_model_mlflow(model, train_loader, val_loader, criterion, optimizer, nu
         model.train()
         train_loss = 0.0
         train_correct = 0
-        # train_total = 0
-        train_total = 0.001
+        train_total = 0
 
-    #
-    #     for inputs, labels in tqdm(train_loader, desc=f"Epoch {epoch+1}/{num_epochs} | Training"):
-    #         inputs, labels = inputs.to(device), labels.to(device)
-    #
-    #         optimizer.zero_grad()
-    #         outputs = model(inputs)
-    #         loss = criterion(outputs, labels)
-    #         loss.backward()
-    #         optimizer.step()
-    #
-    #         train_loss += loss.item()
-    #         _, preds = torch.max(outputs, 1)
-    #         train_correct += (preds == labels).sum().item()
-    #         train_total += labels.size(0)
-    #
+        if not dry_run:
+            for inputs, labels in tqdm(train_loader, desc=f"Epoch {epoch + 1}/{num_epochs} | Training"):
+                inputs, labels = inputs.to(device), labels.to(device)
+
+                optimizer.zero_grad()
+                outputs = model(inputs)
+                loss = criterion(outputs, labels)
+                loss.backward()
+                optimizer.step()
+
+                train_loss += loss.item()
+                _, preds = torch.max(outputs, 1)
+                train_correct += (preds == labels).sum().item()
+                train_total += labels.size(0)
+        else:
+            train_total = 0.001
+
         # Фаза валидации
         model.eval()
         val_loss = 0.0
         val_correct = 0
-        # val_total = 0
-        val_total = 0.001
-    #
-    #     with torch.no_grad():
-    #         for inputs, labels in tqdm(val_loader, desc=f"Epoch {epoch+1}/{num_epochs} | Validation"):
-    #             inputs, labels = inputs.to(device), labels.to(device)
-    #             outputs = model(inputs)
-    #             loss = criterion(outputs, labels)
-    #
-    #             val_loss += loss.item()
-    #             _, preds = torch.max(outputs, 1)
-    #             val_correct += (preds == labels).sum().item()
-    #             val_total += labels.size(0)
-    #
+        val_total = 0
+
+        if not dry_run:
+            with torch.no_grad():
+                for inputs, labels in tqdm(val_loader, desc=f"Epoch {epoch + 1}/{num_epochs} | Validation"):
+                    inputs, labels = inputs.to(device), labels.to(device)
+                    outputs = model(inputs)
+                    loss = criterion(outputs, labels)
+
+                    val_loss += loss.item()
+                    _, preds = torch.max(outputs, 1)
+                    val_correct += (preds == labels).sum().item()
+                    val_total += labels.size(0)
+        else:
+            val_total = 0.001
+
         # Вычисление метрик
         epoch_train_loss = train_loss / len(train_loader)
         epoch_train_acc = 100 * train_correct / train_total
@@ -114,7 +131,7 @@ def train_model_mlflow(model, train_loader, val_loader, criterion, optimizer, nu
         val_accuracies.append(epoch_val_acc)
 
         # Вывод метрик в консоль
-        print(f"\nEpoch {epoch+1}/{num_epochs} metrics:")
+        print(f"\nEpoch {epoch + 1}/{num_epochs} metrics:")
         print(f"  Train Loss: {epoch_train_loss:.4f} | Train Acc: {epoch_train_acc:.2f}%")
         print(f"  Val Loss:   {epoch_val_loss:.4f} | Val Acc:   {epoch_val_acc:.2f}%")
         print(f"  Epoch Time: {time.time() - epoch_start_time:.2f} seconds\n")
@@ -126,69 +143,22 @@ def train_model_mlflow(model, train_loader, val_loader, criterion, optimizer, nu
             "val_loss": epoch_val_loss,
             "val_accuracy": epoch_val_acc,
             "epoch_time": time.time() - epoch_start_time
-        }, step=epoch+1)
-    #
-    #     # Сохранение лучшей модели
-    #     if epoch_val_acc > best_accuracy:
-    #         best_accuracy = epoch_val_acc
-    #         best_model_weights = model.state_dict()
-    #
-    #         # 1. Сохраняем PyTorch модель
-    #         torch_path = f"models/{model_name}.pth"
-    #         torch.save({
-    #             'state_dict': best_model_weights,
-    #             'num_classes': 2,
-    #             'model_type': model.__class__.__name__,
-    #             'optimizer_state': optimizer.state_dict(),
-    #             'epoch': epoch,
-    #             'accuracy': best_accuracy
-    #         }, torch_path)
-    #
-    #         print(f"New best model found with accuracy {best_accuracy:.2f}% - saving model")
-    #         #mlflow.log_artifact(torch_path, "model_artifacts")
-    #
-    #         # Логируем модель в MLflow с сигнатурой и требованиями
-    #         signature = infer_signature(
-    #             sample_input.cpu().numpy(),
-    #             model(sample_input).detach().cpu().numpy()
-    #         )
-    #         '''
-    #         mlflow.pytorch.log_model(
-    #             pytorch_model=model,
-    #             artifact_path="pytorch_model",
-    #             registered_model_name=model_name,
-    #             signature=signature,
-    #             input_example=sample_input.cpu().numpy(),
-    #             pip_requirements=pip_requirements
-    #         )'''
-    #         print('end epoch')
+        }, step=epoch + 1)
 
-    # Логируем модель в MLflow с сигнатурой и требованиями
-    signature = infer_signature(
-        sample_input.cpu().numpy(),
-        model(sample_input).detach().cpu().numpy()
-    )
-    print('Сигнатура модели:', signature)
+        # Сохранение лучшей модели
+        if epoch_val_acc > best_accuracy:
+            best_accuracy = epoch_val_acc
+            best_model_weights = model.state_dict()
+            print(f"New best model found with accuracy {best_accuracy:.2f}% - saving model")
 
-    mlflow.pytorch.log_model(
-        pytorch_model=model,
-        artifact_path="pytorch_model",
-        registered_model_name=model_name,
-        signature=signature,
-        input_example=sample_input.cpu().numpy(),
-        pip_requirements=pip_requirements
-    )
-
-
-
-    # Финальное логирование
+    # Логируем итоговую метрику качества и время обучения
     total_time = time.time() - total_start_time
     mlflow.log_metrics({
         "best_accuracy": best_accuracy,
         "total_training_time": total_time
     })
 
-    # Логируем финальные артефакты
+    # Логируем архитектуру модели и метрики в виде файлов
     mlflow.log_text(str(model), "model_architecture.txt")
     mlflow.log_dict({
         "train_losses": train_losses,
@@ -197,8 +167,7 @@ def train_model_mlflow(model, train_loader, val_loader, criterion, optimizer, nu
         "val_accuracies": val_accuracies
     }, "training_metrics.json")
 
-
-    # Возвращаем лучшую модель
+    # Загружаем в model лучшую модель
     if best_model_weights is not None:
         model.load_state_dict(best_model_weights)
     model.eval()

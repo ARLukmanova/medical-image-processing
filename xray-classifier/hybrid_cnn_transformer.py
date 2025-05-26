@@ -82,3 +82,10 @@ class HybridCNNTransformer(nn.Module):
             nn.LayerNorm(num_features),
             nn.Linear(num_features, num_classes)
         ).to(device)
+
+    @staticmethod
+    def from_pretrained(pretrained_model_path, device, num_classes = 2):
+        model = HybridCNNTransformer(num_classes=num_classes).to(device)
+        checkpoint = torch.load(pretrained_model_path, map_location=device)
+        model.load_state_dict(checkpoint['state_dict'])
+        return model

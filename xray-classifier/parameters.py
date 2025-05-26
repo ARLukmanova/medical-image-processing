@@ -1,0 +1,8 @@
+BATCH_SIZE = 32
+IMAGE_SIZE = (224, 224)
+NUM_EPOCHS = 10
+LEARNING_RATE = 1e-3
+MODEL_NAME = 'xray-hybrid-classifier'
+EXPERIMENT_NAME = "Hybrid-Training-CPU"
+LATEST_VERSION_MODEL_ALIAS = 'current'
+
