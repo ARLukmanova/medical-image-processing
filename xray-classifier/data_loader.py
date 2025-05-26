@@ -74,7 +74,7 @@ def _create_data_bundle(
     # Разделение на train и validation
     val_size = int(0.2 * len(full_train_data))
     train_size = len(full_train_data) - val_size
-    train_data_base, val_data_base = random_split(full_train_data, [train_size, val_size])
+    train_data_base, val_data_base = random_split(full_train_data, [train_size, val_size], generator=generator)
 
     # Преобразования с аугментациями
     train_transform_aug = transforms.Compose([
@@ -87,7 +87,7 @@ def _create_data_bundle(
     ])
 
     train_data_aug = datasets.ImageFolder(root=train_data_root_folder, transform=train_transform_aug)
-    train_data_aug, _ = random_split(train_data_aug, [train_size, val_size])
+    train_data_aug, _ = random_split(train_data_aug, [train_size, val_size], generator = generator)
 
     # Комбинированные наборы данных
     combined_train_data = ConcatDataset([train_data_base, train_data_aug])
@@ -128,7 +128,8 @@ def _create_data_bundle(
     sampler = WeightedRandomSampler(
         weights=sample_weights,
         num_samples=len(sample_weights),
-        replacement=True
+        replacement=True,
+        generator = generator,
     )
 
     # Создаем DataLoader'ы

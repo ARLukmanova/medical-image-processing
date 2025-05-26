@@ -31,7 +31,6 @@ dag = DAG(
 def train_model_with_logging():
     from data_loader import get_data_bundle
     from parameters import MODEL_NAME, USE_GPU
-    from seed_initializer import seed_all
     from train_model import train_model
     from track_model import save_model_as_onnx_file
     import mlflow
@@ -43,8 +42,6 @@ def train_model_with_logging():
     print(f"Device: {device}")
     if USE_GPU:
         assert device == torch.device('cuda')
-
-    seed_all()
 
     init_mlflow()
     active_run = mlflow.start_run(log_system_metrics=True)
