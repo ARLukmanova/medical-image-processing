@@ -10,6 +10,7 @@ from airflow.utils.dates import days_ago
 
 PROJECT_PATH = "/home/airflow/medical-image-processing/xray-classifier/"
 
+
 dag = DAG(
     dag_id="train-and-release-model",
     schedule_interval='0 1 * * *',
@@ -29,7 +30,7 @@ dag = DAG(
 
 def train_model_with_mlflow():
     from data_loader import get_data_bundle
-    from parameters import MODEL_NAME, EXPERIMENT_NAME
+    from parameters import MODEL_NAME, EXPERIMENT_NAME, USE_GPU
     from seed_initializer import seed_all
     from train_model import train_model
     from track_model import log_model_as_onnx
@@ -39,7 +40,9 @@ def train_model_with_mlflow():
     import torch
     """Обучение модели с логированием в MLFlow"""
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-    print(device)
+    print(f"Device: {device}")
+    if USE_GPU:
+        assert device == torch.device('cuda')
     seed_all()
 
 
@@ -61,7 +64,7 @@ def train_model_with_mlflow():
             data_bundle=data_bundle,
             device=device,
             model_name=MODEL_NAME,
-            dry_run=True,
+            dry_run=not USE_GPU,
         )
 
         log_model_as_onnx(model, make_current=True)
