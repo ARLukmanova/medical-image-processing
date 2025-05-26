@@ -1,6 +1,5 @@
 from datetime import timedelta
 
-import mlflow
 from airflow.models import DAG, Variable, TaskInstance
 from airflow.operators.bash import BashOperator
 from airflow.operators.python import PythonOperator
@@ -68,6 +67,7 @@ def train_model_with_logging():
 
 
 def evaluate_and_register_model(ti: TaskInstance):
+    import mlflow
     from track_model import publish_onnx_model_to_registry
     from track_model import init_mlflow
     run_id = ti.xcom_pull(task_ids=train_model_task.task_id)
