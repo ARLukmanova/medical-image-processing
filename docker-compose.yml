@@ -5,7 +5,7 @@ services:
       dockerfile: Dockerfile
     restart: on-failure
     environment:
-      - PREDICTION_SERVICE_URL=http://localhost:8000/predict
+      - PREDICTION_SERVICE_URL=http://service:8000/predict
     env_file:
       - .env
     networks:
@@ -17,11 +17,23 @@ services:
       dockerfile: Dockerfile
     restart: on-failure
     environment:
-      - PREDICTION_SERVICE_URL=http://localhost:8000/predict
+      - PREDICTION_SERVICE_URL=http://service:8000/predict
     networks:
       - MyNet
     ports:
-      - "8080:8501"
+      - "9000:8501"
+
+  service:
+    build:
+      context: ./classification-service
+      dockerfile: Dockerfile
+    restart: on-failure
+    env_file:
+      - .env
+    networks:
+      - MyNet
+    ports:
+      - "9001:8000"
 
 
 
