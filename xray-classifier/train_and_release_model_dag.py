@@ -1,11 +1,12 @@
-import os
 from datetime import timedelta
 
-from airflow.models import DAG, Variable
+import mlflow
+from airflow.models import DAG, Variable, TaskInstance
 from airflow.operators.bash import BashOperator
 from airflow.operators.python import PythonOperator
 from airflow.providers.amazon.aws.hooks.s3 import S3Hook
 from airflow.utils.dates import days_ago
+
 
 
 PROJECT_PATH = "/home/airflow/medical-image-processing/xray-classifier/"
@@ -13,7 +14,7 @@ PROJECT_PATH = "/home/airflow/medical-image-processing/xray-classifier/"
 
 dag = DAG(
     dag_id="train-and-release-model",
-    schedule_interval='0 1 * * *',
+    # schedule_interval='0 1 * * *',
     start_date=days_ago(2),
     catchup=False,
     tags=[],
@@ -22,57 +23,59 @@ dag = DAG(
         'email': 'arlukmanova@edu.hse.ru',
         'email_on_failure': True,
         'email_on_retry': False,
-        'retry': 3,
+        'retry': 1,
         'retry-delay': timedelta(minutes=1)
 
     }
 )
 
-def train_model_with_mlflow():
+def train_model_with_logging():
     from data_loader import get_data_bundle
-    from parameters import MODEL_NAME, EXPERIMENT_NAME, USE_GPU
+    from parameters import MODEL_NAME, USE_GPU
     from seed_initializer import seed_all
     from train_model import train_model
-    from track_model import log_model_as_onnx
+    from track_model import save_model_as_onnx_file
     import mlflow
-
-
     import torch
+    from track_model import init_mlflow
+
     """Обучение модели с логированием в MLFlow"""
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     print(f"Device: {device}")
     if USE_GPU:
         assert device == torch.device('cuda')
+
     seed_all()
 
+    init_mlflow()
+    active_run = mlflow.start_run(log_system_metrics=True)
 
-    public_server_ip = os.environ.get('PUBLIC_SERVER_IP')
-    ml_flow_public_port = os.environ.get('MLFLOW_PUBLIC_PORT')
-    ml_flow_uri = f"http://{public_server_ip}:{ml_flow_public_port}/"
-    print(f"MLFlow URI: {ml_flow_uri}")
+    data_bundle = get_data_bundle(PROJECT_PATH, num_workers=0)  # 0 для Airflow
 
-    mlflow.set_tracking_uri(ml_flow_uri)
-    mlflow.set_experiment(EXPERIMENT_NAME)
+    model, train_loss, train_acc, val_loss, val_acc = train_model(
+        proj_path=PROJECT_PATH,
+        data_bundle=data_bundle,
+        device=device,
+        model_name=MODEL_NAME,
+        dry_run=not USE_GPU,
+    )
 
-    with (mlflow.start_run(log_system_metrics=True)):
+    run_id = active_run.info.run_id
+    mlflow.end_run()
+    save_model_as_onnx_file(model, run_id)
 
-
-        data_bundle = get_data_bundle(PROJECT_PATH, num_workers=0)  # 0 для Airflow
-
-        model, train_loss, train_acc, val_loss, val_acc = train_model(
-            proj_path=PROJECT_PATH,
-            data_bundle=data_bundle,
-            device=device,
-            model_name=MODEL_NAME,
-            dry_run=not USE_GPU,
-        )
-
-        log_model_as_onnx(model, make_current=True)
+    return run_id
 
 
-def evaluate_and_register_model():
-    """Оценка модели и регистрация в MLFlow если качество улучшилось"""
-    pass
+def evaluate_and_register_model(ti: TaskInstance):
+    from track_model import publish_onnx_model_to_registry
+    from track_model import init_mlflow
+    run_id = ti.xcom_pull(task_ids=train_model_task.task_id)
+
+    init_mlflow()
+    mlflow.start_run(run_id)
+    publish_onnx_model_to_registry(run_id, make_current=True)
+    mlflow.end_run()
 
 
 fetch_data_task = BashOperator(
@@ -83,7 +86,7 @@ fetch_data_task = BashOperator(
 
 train_model_task = PythonOperator(
     task_id='train_model_with_logging',
-    python_callable=train_model_with_mlflow,
+    python_callable=train_model_with_logging,
     dag=dag,
 )
 
