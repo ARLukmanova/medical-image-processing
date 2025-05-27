@@ -71,6 +71,9 @@ st.markdown("""
         background-color: #e8f8f0;
         border-left: 4px solid #2ecc71;
     }
+    .stSpinner > div > div {
+        color: #3498db !important;
+    }
 </style>
 """, unsafe_allow_html=True)
 
@@ -78,7 +81,7 @@ st.markdown("""
 st.markdown("<h1 class='title'>Анализ рентгеновских снимков на пневмонию</h1>", unsafe_allow_html=True)
 st.markdown("""
     <div style="text-align: center; margin-bottom: 30px;">
-        Загрузите рентгеновский снимок грудной клетки, и мы определим, есть ли признаки пневмонии.
+        Загрузите рентгеновские снимки грудной клетки, и мы определим, есть ли признаки пневмонии, используя гибридную модель.
     </div>
 """, unsafe_allow_html=True)
 
@@ -92,150 +95,136 @@ def predict_image(image_bytes):
         if response.status_code == 200:
             return response.json()
         else:
-            st.error(f"Ошибка сервера: {response.json().get('detail', 'Неизвестная ошибка')}")
+            # More detailed error message from FastAPI
+            error_detail = response.json().get('detail', 'Неизвестная ошибка')
+            st.error(f"Ошибка сервера для снимка: {error_detail}")
             return None
+    except requests.exceptions.ConnectionError:
+        st.error("Не удалось подключиться к API-сервису. Убедитесь, что он запущен.")
+        return None
     except Exception as e:
         st.error(f"Ошибка при отправке запроса: {str(e)}")
         return None
 
 
-# Функция для создания графика
-def create_probability_plot(models_data):
-    fig, ax = plt.subplots(figsize=(10, 5))
+# Функция для создания графика (показывает только Hybrid)
+def create_probability_plot(pneumonia_prob, normal_prob):
+    # Reduced figsize for a smaller plot
+    fig, ax = plt.subplots(figsize=(4, 2)) # Changed from (8, 4) to (6, 3)
 
-    # Фильтруем модели с ошибками
-    valid_models = {k: v for k, v in models_data.items() if 'probabilities' in v}
+    labels = ['Норма', 'Пневмония']
+    probabilities = [normal_prob, pneumonia_prob]
+    colors = ['green', 'red']
 
-    if not valid_models:
-        return None
-
-    # Данные для графика
-    models = [pred['name'] for pred in valid_models.values()]
-    pneumonia_probs = [data['probabilities'][1] for data in valid_models.values()]
-    normal_probs = [data['probabilities'][0] for data in valid_models.values()]
-
-    # Среднее значение
-    avg_pneumonia = sum(pneumonia_probs) / len(pneumonia_probs)
-
-    # Построение графика
-    x = range(len(models))
-    width = 0.35
-
-    ax.bar(x, normal_probs, width, label='Норма', color='#2ecc71')
-    ax.bar(x, pneumonia_probs, width, bottom=normal_probs, label='Пневмония', color='#e74c3c')
-
-    # Линия среднего значения
-    ax.axhline(y=avg_pneumonia, color='#3498db', linestyle='--',
-               label=f'Средняя вероятность пневмонии: {avg_pneumonia:.1%}')
-
-    ax.set_xticks(x)
-    ax.set_xticklabels(models)
+    ax.bar(labels, probabilities, color=colors)
     ax.set_ylabel('Вероятность')
-    ax.set_title('Результаты классификации разными моделями')
-    ax.legend(loc='upper right')
+    ax.set_title('Результат классификации гибридной моделью')
     ax.set_ylim(0, 1)
     ax.grid(True, axis='y', alpha=0.3)
 
     return fig
 
 
-# Загрузка изображения
-uploaded_file = st.file_uploader(
-    "Выберите рентгеновский снимок (JPG/PNG)",
+# --- File Uploader for Multiple Files ---
+uploaded_files = st.file_uploader(
+    "Выберите рентгеновские снимки (JPG/PNG)",
     type=["jpg", "jpeg", "png"],
-    help="Загрузите рентгеновский снимок грудной клетки для анализа"
+    accept_multiple_files=True, # Key change here!
+    help="Загрузите один или несколько рентгеновских снимков грудной клетки для анализа"
 )
 
-if uploaded_file is not None:
-    # Показ загруженного изображения
-    image = Image.open(uploaded_file)
-    st.image(image, caption="Ваш рентгеновский снимок", width=300)
+if uploaded_files: # Check if any files are uploaded
+    # Button to trigger analysis for all uploaded files
+    if st.button("Анализировать все снимки", type="primary"):
+        st.subheader("Результаты анализа:")
+        for i, uploaded_file in enumerate(uploaded_files):
+            # Display uploaded image and prepare for analysis
+            image = Image.open(uploaded_file)
+            img_bytes = io.BytesIO()
+            image.save(img_bytes, format="JPEG")
+            img_bytes = img_bytes.getvalue()
 
-    # Конвертация в bytes
-    img_bytes = io.BytesIO()
-    image.save(img_bytes, format="JPEG")
-    img_bytes = img_bytes.getvalue()
+            # Use an expander for each image's results
+            with st.expander(f"Результат для снимка: **{uploaded_file.name}**"):
+                st.image(image, caption=f"Ваш рентгеновский снимок: {uploaded_file.name}", width=300)
 
-    # Кнопка для анализа
-    if st.button("Анализировать снимок", type="primary"):
-        with st.spinner("Анализируем снимок..."):
-            # Отправка на сервер
-            result = predict_image(img_bytes)
+                with st.spinner(f"Анализируем снимок {uploaded_file.name}..."):
+                    result = predict_image(img_bytes)
 
-            if result:
-                # Отображение результатов
-                st.markdown("<div class='result-box'>", unsafe_allow_html=True)
+                    if result:
+                        prediction = result.get("prediction", {})
+                        recommendation = result.get("recommendation", {})
+                        #plot_image_base64 = result.get("plot_image")
 
-                # Итоговый результат
-                final_pred = result["final_prediction"]
-                diagnosis_class = "pneumonia" if final_pred["class"] == "Пневмония" else "normal"
+                        diagnosis_class_name = prediction.get("class", "Неизвестно")
+                        pneumonia_probability = prediction.get("pneumonia_probability", 0.0)
+                        normal_probability = prediction.get("normal_probability", 0.0)
+                        is_pneumonia = prediction.get("is_pneumonia", False)
 
-                st.markdown(f"""
-                    <div class='diagnosis {diagnosis_class}'>
-                        ЗАКЛЮЧЕНИЕ: {final_pred["class"].upper()}
-                    </div>
-                    <div class='probability'>
-                        Вероятность: <strong>{final_pred['probability'] * 100:.1f}%</strong>
-                    </div>
-                """, unsafe_allow_html=True)
+                        action_text = recommendation.get("action", "Нет рекомендаций")
+                        urgency_text = recommendation.get("urgency", "Неизвестно")
 
-                # Результаты по моделям
-                st.markdown("<h4>Результаты по моделям:</h4>", unsafe_allow_html=True)
-                for model, pred in result["models_predictions"].items():
-                    st.markdown(f"""
-                        <div class='model-result'>
-                            <b>{pred['name']}</b>: {pred['class']} ({pred['probability'] * 100:.1f}%)
-                        </div>
-                    """, unsafe_allow_html=True)
+                        st.markdown("<div class='result-box'>", unsafe_allow_html=True)
 
-                # Рекомендации
-                rec_class = "warning" if final_pred["class"] == "Пневмония" else "success"
-                rec_text = ("❗️ Требуется консультация врача!"
-                            if final_pred["class"] == "Пневмония"
-                            else "✅ Патологий не обнаружено")
+                        diagnosis_css_class = "pneumonia" if is_pneumonia else "normal"
+                        st.markdown(f"""
+                            <div class='diagnosis {diagnosis_css_class}'>
+                                ЗАКЛЮЧЕНИЕ: {diagnosis_class_name.upper()}
+                            </div>
+                            <div class='probability'>
+                                Вероятность пневмонии: <strong>{pneumonia_probability * 100:.1f}%</strong><br>
+                                Вероятность нормы: <strong>{normal_probability * 100:.1f}%</strong>
+                            </div>
+                        """, unsafe_allow_html=True)
 
-                st.markdown(f"""
-                    <div class='recommendation {rec_class}'>
-                        <h4>РЕКОМЕНДАЦИИ</h4>
-                        {rec_text}
-                    </div>
-                """, unsafe_allow_html=True)
+                        rec_css_class = "warning" if is_pneumonia else "success"
+                        st.markdown(f"""
+                            <div class='recommendation {rec_css_class}'>
+                                <h4>РЕКОМЕНДАЦИИ</h4>
+                                <p>{action_text}</p>
+                                <p>Срочность: <b>{urgency_text}</b></p>
+                            </div>
+                        """, unsafe_allow_html=True)
 
-                st.markdown("</div>", unsafe_allow_html=True)
+                        st.markdown("</div>", unsafe_allow_html=True)
 
-                # График вероятностей
-                fig = create_probability_plot(result["models_predictions"])
-                if fig:
-                    st.pyplot(fig)
+                        #if plot_image_base64:
+                        #    try:
+                        #        plot_bytes = base64.b64decode(plot_image_base64)
+                        #        st.image(plot_bytes, caption="График вероятностей от гибридной модели", use_container_width=True)
+                        #    except Exception as e:
+                        #        st.error(f"Ошибка при отображении графика для {uploaded_file.name}: {e}")
+                        #else:
+                        #    fig = create_probability_plot(pneumonia_probability, normal_probability)
+                        #    if fig:
+                        #        st.pyplot(fig)
+                        #        plt.close(fig) # Close the figure to free up memory
 
-                # Интерпретация результатов
-                with st.expander("Как интерпретировать результаты"):
-                    st.markdown("""
-                        - **Вероятность до 20%** - скорее всего норма
-                        - **20-60%** - рекомендуется повторный анализ
-                        - **60-90%** - высокая вероятность патологии
-                        - **Выше 90%** - срочно к врачу
+                    st.markdown("---") # Separator for clarity between image results
 
-                        Разные модели могут давать разные оценки. 
-                        Средний результат считается как среднее арифметическое всех моделей.
-                    """)
+# --- Global Interpretation and Sidebar ---
+with st.expander("Как интерпретировать результаты"):
+    st.markdown("""
+        - **Вероятность пневмонии 0-20%** - норма
+        - **20-40%** - минимальные изменения, рекомендуется контроль
+        - **40-70%** - умеренные изменения, требуется обследование
+        - **70-100%** - высокая вероятность патологии, срочно к врачу
+
+        Используется гибридная модель (ResNet + EfficientNet) для более точной диагностики.
+    """)
 
 # Информация о приложении в сайдбаре
 st.sidebar.markdown("""
 ### О приложении
-Это приложение использует набор нейросетей для анализа рентгеновских снимков грудной клетки на признаки пневмонии.
+Это приложение использует **гибридную нейросеть** для анализа рентгеновских снимков грудной клетки на признаки пневмонии.
 
-**Используемые модели:**
-- ResNet18
-- EfficientNet
-- VGG16
-- ViT
-- Hybrid
+**Используемая модель:**
+- **Hybrid** (комбинация CNN и ViT)
 
 **Как использовать:**
-1. Загрузите рентгеновский снимок
-2. Нажмите кнопку "Анализировать снимок"
-3. Получите подробный отчет
+1. Загрузите **один или несколько** рентгеновских снимков.
+2. Нажмите кнопку "Анализировать все снимки".
+3. Получите подробный отчет для каждого снимка.
 
 **Примечание:** Результаты являются предварительными и не заменяют консультацию врача.
 """)
