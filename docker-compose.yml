@@ -1,8 +1,6 @@
 services:
   bot:
-    build:
-      context: ./tg-bot/
-      dockerfile: Dockerfile
+    image: arlukmanova/tg-bot:latest
     restart: on-failure
     environment:
       - PREDICTION_SERVICE_URL=http://service:8000/predict
@@ -12,9 +10,7 @@ services:
       - MyNet
 
   ui:
-    build:
-      context: ./streamlit-app/
-      dockerfile: Dockerfile
+    image: arlukmanova/streamlit-app:latest
     restart: on-failure
     environment:
       - PREDICTION_SERVICE_URL=http://service:8000/predict
@@ -24,9 +20,7 @@ services:
       - "9000:8501"
 
   service:
-    build:
-      context: ./classification-service
-      dockerfile: Dockerfile
+    image: arlukmanova/classification-service:latest
     restart: on-failure
     env_file:
       - .env
@@ -34,8 +28,6 @@ services:
       - MyNet
     ports:
       - "9001:8000"
-
-
 
 networks:
   MyNet:
