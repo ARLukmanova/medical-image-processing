@@ -1,4 +1,14 @@
 services:
+  redis:
+    image: redis:5.0-alpine
+    healthcheck:
+      test: [ "CMD", "redis-cli", "ping" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    restart: on-failure
+
   bot:
     image: arlukmanova/tg-bot:latest
     restart: on-failure
@@ -22,12 +32,25 @@ services:
   service:
     image: arlukmanova/classification-service:latest
     restart: on-failure
-    env_file:
-      - .env
+    environment:
+      - CELERY_BROKER_URL=redis://redis:6379/0
+      - CELERY_RESULT_BACKEND=redis://redis:6379/0
     networks:
       - MyNet
     ports:
       - "9001:8000"
+
+  worker:
+    image: arlukmanova/classification-service:latest
+    restart: on-failure
+    environment:
+      - CELERY_BROKER_URL=redis://redis:6379/0
+      - CELERY_RESULT_BACKEND=redis://redis:6379/0
+    env_file:
+      - .env
+    networks:
+      - MyNet
+    command: celery -A tasks.celery_app worker --loglevel=info
 
 networks:
   MyNet:
