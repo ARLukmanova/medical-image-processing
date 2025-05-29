@@ -1,6 +1,8 @@
 services:
   redis:
     image: redis:5.0-alpine
+    networks:
+      - MyNet
     healthcheck:
       test: [ "CMD", "redis-cli", "ping" ]
       interval: 10s
@@ -50,7 +52,7 @@ services:
       - .env
     networks:
       - MyNet
-    command: celery -A tasks.celery_app worker --loglevel=info
+    command: celery -A celery_app worker --loglevel=info --concurrency=1
 
 networks:
   MyNet:
