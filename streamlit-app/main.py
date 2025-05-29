@@ -7,8 +7,7 @@ from PIL import Image
 
 from configuration.settings import settings
 
-# Настройки
-FASTAPI_URL = settings.prediction_service_url
+RESULT_POLLING_MAX_RETRIES = 30
 CLASS_NAMES = ['Норма', 'Пневмония']
 
 # Конфигурация страницы
@@ -90,12 +89,12 @@ st.markdown("""
 def predict_image(image_bytes):
     try:
         files = {"file": ("image.jpg", image_bytes, "image/jpeg")}
-        response = requests.post(FASTAPI_URL, files=files)
+        response = requests.post(settings.get_predict_endpoint(), files=files)
 
-        if response.status_code == 200:
-            return response.json()
+        if response.status_code == 202:
+            task_id = response.json().get('task_id')
+            return get_prediction_results(task_id)
         else:
-            # More detailed error message from FastAPI
             error_detail = response.json().get('detail', 'Неизвестная ошибка')
             st.error(f"Ошибка сервера для снимка: {error_detail}")
             return None
@@ -105,6 +104,22 @@ def predict_image(image_bytes):
     except Exception as e:
         st.error(f"Ошибка при отправке запроса: {str(e)}")
         return None
+
+
+def get_prediction_results(task_id):
+    import time
+    for _ in range(RESULT_POLLING_MAX_RETRIES):
+        poll_response = requests.get(settings.get_prediction_result_endpoint(task_id))
+        if poll_response.status_code == 200:
+            return poll_response.json().get('result')
+        elif poll_response.status_code == 202:
+            time.sleep(1)
+        else:
+            error_detail = poll_response.json().get('error', 'Сервис не вернул описание ошибки')
+            st.error(f"Ошибка при получении результата: {error_detail}")
+            return None
+    st.error("Время ожидания результата истекло.")
+    return None
 
 
 # Функция для создания графика (показывает только Hybrid)
