@@ -6,7 +6,7 @@ from fastapi.responses import JSONResponse
 
 from logger import logger
 from model import Model
-from model_registry_tools import ensure_model_file_exists, init_mlflow
+from model_registry_tools import ensure_model_file_exists, init_mlflow, download_new_model_version
 from parameters import CLASS_NAMES
 from plot_tools import create_probability_plot
 
@@ -52,6 +52,21 @@ async def predict_endpoint(file: UploadFile = File(...)) -> JSONResponse:
     except Exception as e:
         logger.error(f"Необработанная ошибка: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail="Внутренняя ошибка сервера")
+
+
+@app.get("/update_model_version")
+async def update_model_version_endpoint() -> JSONResponse:
+    try:
+        logger.info("Запрос на обновление версии модели")
+        download_new_model_version()
+        model.load_model()
+        return JSONResponse(content={
+            "status": "success",
+            "message": "Модель успешно обновлена"
+        })
+    except Exception as e:
+        logger.error(f"Ошибка при обновлении модели: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail="Ошибка при обновлении модели")
 
 
 if __name__ == "__main__":
