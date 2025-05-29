@@ -25,7 +25,7 @@ services:
     image: arlukmanova/streamlit-app:latest
     restart: on-failure
     environment:
-      - PREDICTION_SERVICE_URL=http://service:8000/predict
+      - PREDICTION_SERVICE_URL=http://service:8000/
     networks:
       - MyNet
     ports:
@@ -53,6 +53,18 @@ services:
     networks:
       - MyNet
     command: celery -A celery_app worker --loglevel=info --concurrency=1
+
+  flower:
+    image: mher/flower:latest
+    restart: on-failure
+    environment:
+      - CELERY_BROKER_URL=redis://redis:6379/0
+      - FLOWER_PORT=5555
+    networks:
+      - MyNet
+    ports:
+      - "5555:5555"
+    command: celery flower
 
 networks:
   MyNet:
