@@ -4,7 +4,7 @@ import io
 import logging
 from typing import Dict, Any
 
-import aiohttp
+import requests
 from PIL import Image
 from aiogram import Bot, Dispatcher, types, F
 from aiogram.enums import ParseMode
@@ -13,10 +13,10 @@ from aiogram.types import Message
 
 from configuration.settings import settings
 
-# Конфигурация
 API_URL = settings.prediction_service_url
 TELEGRAM_TOKEN = settings.tg_bot_token
 TIMEOUT = 30
+RESULT_POLLING_MAX_RETRIES = 30
 MAX_FILE_SIZE = 10 * 1024 * 1024  # 10MB
 
 # Настройка логирования
@@ -24,7 +24,6 @@ logging.basicConfig(
     format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
     level=logging.INFO,
     handlers=[
-        logging.FileHandler("bot.log"),
         logging.StreamHandler(),
     ],
 )
@@ -37,19 +36,6 @@ dp = Dispatcher()
 
 class APIError(Exception):
     """Кастомное исключение для ошибок API"""
-
-
-async def check_api_health():
-    """Проверка доступности API"""
-    try:
-        async with aiohttp.ClientSession() as session:
-            async with session.get(API_URL.replace("/predict", "/health"), timeout=5) as response:
-                if response.status != 200:
-                    raise ConnectionError(f"API health check failed: {response.status}")
-                logger.info("API доступен и работает")
-    except Exception as e:
-        logger.error(f"Ошибка подключения к API: {e}")
-        raise
 
 
 def validate_image(image_bytes: bytes) -> bool:
@@ -68,21 +54,26 @@ async def send_to_api(image_bytes: bytes) -> Dict[str, Any]:
     try:
         logger.info(f"Отправка изображения размером {len(image_bytes)} байт в API")
 
-        async with aiohttp.ClientSession() as session:
-            form_data = aiohttp.FormData()
-            form_data.add_field(
-                name="file",
-                value=io.BytesIO(image_bytes),
-                filename="xray.jpg",
-                content_type="image/jpeg"
-            )
+        files = {"file": ("image.jpg", image_bytes, "image/jpeg")}
+        response = requests.post(settings.get_predict_endpoint(), files=files)
 
-            async with session.post(API_URL, data=form_data, timeout=TIMEOUT) as response:
-                if response.status != 200:
-                    error_text = await response.text()
-                    raise APIError(f"API error: {response.status} - {error_text}")
+        if response.status_code == 202:
+            task_id = response.json().get('task_id')
+            import time
+            for _ in range(RESULT_POLLING_MAX_RETRIES):
+                poll_response = requests.get(settings.get_prediction_result_endpoint(task_id))
+                if poll_response.status_code == 200:
+                    return poll_response.json().get('result')
+                elif poll_response.status_code == 202:
+                    time.sleep(1)
+                else:
+                    error_detail = poll_response.json().get('error', 'Сервис не вернул описание ошибки')
+                    raise APIError(f"Ошибка при получении результата: {error_detail}")
+            raise APIError("Время ожидания результата истекло.")
+        else:
+            error_detail = response.json().get('detail', 'Неизвестная ошибка')
+            raise APIError(f"Ошибка сервера для снимка: {error_detail}")
 
-                return await response.json()
     except Exception as e:
         logger.error(f"Ошибка при обращении к API: {e}")
         raise APIError(str(e))
@@ -110,7 +101,7 @@ async def send_results(message: Message, result: Dict[str, Any], image_bytes: by
             f"▪️ Норма: <code>{normal_prob:.1f}%</code>\n\n"
             f"💡 <b>РЕКОМЕНДАЦИИ:</b>\n"
             f"{recommendation['action']}\n"  # <-- Используем новую переменную recommendation
-            f"Срочность: <b>{recommendation['urgency']}</b>\n\n" # <-- Используем новую переменную recommendation
+            f"Срочность: <b>{recommendation['urgency']}</b>\n\n"  # <-- Используем новую переменную recommendation
             f"<i>Использована гибридная модель (CNN + ViT)</i>\n"
             f"<i>Это предварительный анализ, не заменяющий консультацию специалиста</i>"
         )
@@ -159,8 +150,10 @@ async def send_results(message: Message, result: Dict[str, Any], image_bytes: by
         )
 
     except KeyError as e:
-        logger.error(f"Ошибка в структуре ответа API: Отсутствует ключ {e}. Получено: {result}") # Added more context to error
-        await message.answer(f"⚠️ Ошибка обработки результатов. Неверный формат данных от сервера. Отсутствует ключ: {e}")
+        logger.error(
+            f"Ошибка в структуре ответа API: Отсутствует ключ {e}. Получено: {result}")  # Added more context to error
+        await message.answer(
+            f"⚠️ Ошибка обработки результатов. Неверный формат данных от сервера. Отсутствует ключ: {e}")
     except Exception as e:
         logger.error(f"Ошибка отправки результатов: {e}", exc_info=True)
         await message.answer("⚠️ Получены результаты, но возникла ошибка при отображении")
