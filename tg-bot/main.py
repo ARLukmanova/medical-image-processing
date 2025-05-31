@@ -202,8 +202,8 @@ async def process_image(message: Message, image_bytes: bytes):
         if 'processing_msg' in locals():
             try:
                 await bot.delete_message(chat_id=message.chat.id, message_id=processing_msg.message_id)
-            except:
-                pass
+            except Exception as e:
+                logger.error(f"Ошибка при удалении сообщения обработки: {e}", exc_info=True)
 
 
 @dp.message(Command("start"))
@@ -260,8 +260,8 @@ async def handle_photo(message: Message):
         if processing_msg:
             try:
                 await bot.delete_message(chat_id=message.chat.id, message_id=processing_msg.message_id)
-            except:
-                pass
+            except Exception as e:
+                logger.error(f"Ошибка при удалении сообщения обработки: {e}", exc_info=True)
 
 
 @dp.message(F.document)
@@ -286,8 +286,8 @@ async def handle_document(message: Message):
         if processing_msg:
             try:
                 await bot.delete_message(chat_id=message.chat.id, message_id=processing_msg.message_id)
-            except:
-                pass
+            except Exception as e:
+                logger.error(f"Ошибка при удалении сообщения обработки: {e}", exc_info=True)
 
 
 async def main():
