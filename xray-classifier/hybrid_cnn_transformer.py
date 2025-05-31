@@ -3,6 +3,7 @@ import torch.nn as nn
 from torchvision import models
 from transformers import ViTModel, ViTConfig
 
+
 class HybridCNNTransformer(nn.Module):
     def __init__(self, num_classes=2, cnn_model='convnext_tiny', vit_model='google/vit-base-patch16-224-in21k'):
         super().__init__()
@@ -84,7 +85,7 @@ class HybridCNNTransformer(nn.Module):
         ).to(device)
 
     @staticmethod
-    def from_pretrained(pretrained_model_path, device, num_classes = 2):
+    def from_pretrained(pretrained_model_path, device, num_classes=2):
         model = HybridCNNTransformer(num_classes=num_classes).to(device)
         checkpoint = torch.load(pretrained_model_path, map_location=device)
         model.load_state_dict(checkpoint['state_dict'])

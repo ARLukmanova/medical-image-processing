@@ -7,6 +7,7 @@ from tqdm.asyncio import tqdm
 from hybrid_cnn_transformer import HybridCNNTransformer
 from parameters import NUM_EPOCHS, LEARNING_RATE
 
+
 def train_model(proj_path, data_bundle, device, model_name, dry_run=True):
     model = HybridCNNTransformer.from_pretrained(
         proj_path + 'pretrained/hybrid_oct.pth',

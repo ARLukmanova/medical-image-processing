@@ -1,15 +1,11 @@
 from datetime import timedelta
 
-from airflow.models import DAG, Variable, TaskInstance
+from airflow.models import DAG, TaskInstance
 from airflow.operators.bash import BashOperator
 from airflow.operators.python import PythonOperator
-from airflow.providers.amazon.aws.hooks.s3 import S3Hook
 from airflow.utils.dates import days_ago
 
-
-
 PROJECT_PATH = "/home/airflow/medical-image-processing/xray-classifier/"
-
 
 dag = DAG(
     dag_id="train-and-release-model",
@@ -27,6 +23,7 @@ dag = DAG(
 
     }
 )
+
 
 def train_model_with_logging():
     from data_loader import get_data_bundle

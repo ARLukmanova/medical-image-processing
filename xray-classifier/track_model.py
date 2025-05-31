@@ -44,7 +44,6 @@ def publish_onnx_model_to_registry(run_id, make_current):
         raise FileNotFoundError(f"Файл: {onnx_path} не был найден. Убедитесь, что модель была сохранена корректно, "
                                 f"а также в том, что все шаги DAGа выполняются на одном и том же worker.")
 
-
     print(f'Загружаем модель в MLflow: {onnx_path}')
     log_result = mlflow.onnx.log_model(
         onnx_model=onnx.load(onnx_path),

@@ -10,8 +10,9 @@ from seed_initializer import create_torch_generator, seed_worker
 class DatasetSizes:
     def __init__(self, train: int, val: int, test: int):
         self.train: int = train
-        self.val: int  = val
-        self.test: int  = test
+        self.val: int = val
+        self.test: int = test
+
 
 class ClassesInfo:
     def __init__(self, weights: torch.Tensor, names: list[str], counts: torch.Tensor):
@@ -19,19 +20,21 @@ class ClassesInfo:
         self.names: list[str] = names
         self.counts: torch.Tensor = counts
 
+
 class DatasetLoaders:
     def __init__(self, train: DataLoader, val: DataLoader, test: DataLoader):
         self.train: DataLoader = train
         self.val = val
         self.test = test
 
+
 class DataBundle:
     def __init__(
-        self,
-        dataset_loaders: DatasetLoaders,
-        dataset_sizes: DatasetSizes,
-        classes_info: ClassesInfo,
-        image_size: tuple[int, int],
+            self,
+            dataset_loaders: DatasetLoaders,
+            dataset_sizes: DatasetSizes,
+            classes_info: ClassesInfo,
+            image_size: tuple[int, int],
     ):
         self.loaders: DatasetLoaders = dataset_loaders
         self.dataset_sizes: DatasetSizes = dataset_sizes
@@ -67,7 +70,7 @@ def _create_data_bundle(
     # Загрузка данных для получения информации о классах
     full_train_data = datasets.ImageFolder(root=train_data_root_folder, transform=base_transform)
     test_data = datasets.ImageFolder(root=test_data_root_folder, transform=base_transform)
-    
+
     # Сохраняем имена классов
     class_names = full_train_data.classes
 
@@ -87,7 +90,7 @@ def _create_data_bundle(
     ])
 
     train_data_aug = datasets.ImageFolder(root=train_data_root_folder, transform=train_transform_aug)
-    train_data_aug, _ = random_split(train_data_aug, [train_size, val_size], generator = generator)
+    train_data_aug, _ = random_split(train_data_aug, [train_size, val_size], generator=generator)
 
     # Комбинированные наборы данных
     combined_train_data = ConcatDataset([train_data_base, train_data_aug])
@@ -109,8 +112,6 @@ def _create_data_bundle(
     class_weights = 1. / class_counts.float()
     class_weights = class_weights / class_weights.sum()
 
-
-
     # Создание DataLoader'ов
     def create_loader(dataset, shuffle=False, sampler=None) -> DataLoader:
         return DataLoader(
@@ -129,7 +130,7 @@ def _create_data_bundle(
         weights=sample_weights,
         num_samples=len(sample_weights),
         replacement=True,
-        generator = generator,
+        generator=generator,
     )
 
     # Создаем DataLoader'ы
@@ -156,6 +157,7 @@ def _create_data_bundle(
         image_size=image_size
     )
 
+
 def _log_data_bundle(data_bundle: DataBundle):
     """
     Логирует информацию о загруженных данных.
@@ -179,8 +181,7 @@ def _log_data_bundle(data_bundle: DataBundle):
     print(text)
 
 
-def get_data_bundle(project_path: str, num_workers = 0) -> DataBundle:
-
+def get_data_bundle(project_path: str, num_workers=0) -> DataBundle:
     data_bundle = _create_data_bundle(
         train_data_root_folder=project_path + "datasets/chest_xray_clean/train",
         test_data_root_folder=project_path + "datasets/chest_xray_clean/test",
