@@ -18,6 +18,8 @@ def test_predict_task_format(monkeypatch):
 
     monkeypatch.setattr('worker.predict_task.model', DummyModel())
     monkeypatch.setattr('worker.predict_task.create_probability_plot', DummyPlot.create_probability_plot)
+    monkeypatch.setattr('worker.predict_task.init_mlflow', lambda: None)
+    monkeypatch.setattr('worker.predict_task.ensure_model_file_exists', lambda: None)
     result = predict_task(b'data', 'test.png')
     assert result['status'] == 'success'
     assert 'prediction' in result
