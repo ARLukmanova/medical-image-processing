@@ -9,7 +9,7 @@ from fastapi import HTTPException
 from scipy.special import softmax
 
 from logger import logger
-from parameters import MODEL_PATH
+from worker.parameters import MODEL_PATH
 
 
 class Model:

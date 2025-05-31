@@ -1,6 +1,3 @@
-import os
-
-import uvicorn
 from fastapi import FastAPI, UploadFile, File, HTTPException
 from fastapi.responses import JSONResponse
 
@@ -41,11 +38,3 @@ async def get_prediction_status(task_id: str) -> JSONResponse:
     else:
         result = {"status": task.state}
     return JSONResponse(content=result, status_code=result["status_code"])
-
-
-if __name__ == "__main__":
-    host = os.getenv("HOST", "0.0.0.0")
-    port = int(os.getenv("PORT", 8000))
-
-    logger.info(f"Запуск сервера на http://{host}:{port}")
-    uvicorn.run(app, host=host, port=port)

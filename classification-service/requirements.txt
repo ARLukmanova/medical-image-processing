@@ -32,9 +32,12 @@ graphql-relay==3.2.0
 greenlet==3.2.2
 gunicorn==23.0.0
 h11==0.16.0
+httpcore==1.0.9
+httpx==0.28.1
 humanfriendly==10.0
 idna==3.10
 importlib_metadata==8.6.1
+iniconfig==2.1.0
 itsdangerous==2.2.0
 Jinja2==3.1.6
 joblib==1.5.1
@@ -55,6 +58,7 @@ opentelemetry-semantic-conventions==0.54b1
 packaging==24.2
 pandas==2.2.3
 pillow==11.2.1
+pluggy==1.6.0
 prompt_toolkit==3.0.51
 protobuf==6.31.0
 pyarrow==19.0.1
@@ -64,6 +68,7 @@ pydantic==2.11.5
 pydantic_core==2.33.2
 PyJWT==2.9.0
 pyparsing==3.2.3
+pytest==8.3.5
 python-dateutil==2.9.0.post0
 python-multipart==0.0.20
 pytz==2025.2

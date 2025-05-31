@@ -1,8 +1,8 @@
 from celery_app import celery_app
-from model import Model
-from model_registry_tools import init_mlflow, ensure_model_file_exists
-from parameters import CLASS_NAMES
-from plot_tools import create_probability_plot
+from worker.model import Model
+from worker.model_registry_tools import init_mlflow, ensure_model_file_exists
+from worker.parameters import CLASS_NAMES
+from worker.plot_tools import create_probability_plot
 
 init_mlflow()
 ensure_model_file_exists()

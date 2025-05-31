@@ -2,7 +2,7 @@ import mlflow
 import os
 import shutil
 from logger import logger
-from parameters import MODEL_PATH, MODEL_NAME, LATEST_MODEL_VERSION_ALIAS, MODEL_DIR, MLFLOW_PORT, MLFLOW_IP, \
+from worker.parameters import MODEL_PATH, MODEL_NAME, LATEST_MODEL_VERSION_ALIAS, MODEL_DIR, MLFLOW_PORT, MLFLOW_IP, \
     MODEL_VERSION_FILENAME
 
 
