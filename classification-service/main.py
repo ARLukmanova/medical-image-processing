@@ -33,28 +33,14 @@ async def predict_endpoint(file: UploadFile = File(...)) -> JSONResponse:
 async def get_prediction_status(task_id: str) -> JSONResponse:
     task = celery_app.AsyncResult(task_id)
     if task.state == "PENDING":
-        result =  {"status": "processing", "status_code": 202}
+        result = {"status": "processing", "status_code": 202}
     elif task.state == "SUCCESS":
         result = {"status": "done", "result": task.result, "status_code": 200}
     elif task.state == "FAILURE":
-        result =  {"status": "error", "error": str(task.info), "status_code": 500}
+        result = {"status": "error", "error": str(task.info), "status_code": 500}
     else:
-        result =  {"status": task.state}
+        result = {"status": task.state}
     return JSONResponse(content=result, status_code=result["status_code"])
-
-# @app.get("/update_model_version")
-# async def update_model_version_endpoint() -> JSONResponse:
-#     try:
-#         logger.info("Запрос на обновление версии модели")
-#         download_new_model_version()
-#         model.load_model()
-#         return JSONResponse(content={
-#             "status": "success",
-#             "message": "Модель успешно обновлена"
-#         })
-#     except Exception as e:
-#         logger.error(f"Ошибка при обновлении модели: {e}", exc_info=True)
-#         raise HTTPException(status_code=500, detail="Ошибка при обновлении модели")
 
 
 if __name__ == "__main__":

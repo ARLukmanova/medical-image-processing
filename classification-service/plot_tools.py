@@ -2,6 +2,7 @@ import matplotlib.pyplot as plt
 from io import BytesIO
 import base64
 
+
 def create_probability_plot(probabilities: list) -> str:
     """Создает график вероятностей и возвращает его как base64"""
     plt.figure(figsize=(8, 4))

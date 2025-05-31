@@ -8,6 +8,7 @@ init_mlflow()
 ensure_model_file_exists()
 model = Model()
 
+
 @celery_app.task
 def predict_task(image_bytes, filename):
     pred = model.predict(image_bytes)

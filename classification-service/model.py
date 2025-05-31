@@ -52,7 +52,6 @@ class Model:
             logger.error(f"Ошибка предобработки: {e}")
             raise HTTPException(status_code=400, detail=f"Ошибка обработки изображения: {e}")
 
-
     def _predict(self, image_np: np.ndarray) -> Dict[str, any]:
         try:
             if image_np.dtype != np.float32:

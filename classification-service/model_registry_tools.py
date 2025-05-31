@@ -39,16 +39,19 @@ def init_mlflow():
     mlflow.set_tracking_uri(ml_flow_uri)
     logger.info(f"MLFlow URI: {ml_flow_uri}")
 
+
 def _save_model_version(model_version):
     with open(os.path.join(MODEL_DIR, MODEL_VERSION_FILENAME), "w", encoding="utf-8") as f:
         f.truncate(0)
         f.write(str(model_version))
+
 
 def _get_model_version():
     with open(os.path.join(MODEL_DIR, MODEL_VERSION_FILENAME), "r", encoding="utf-8") as f:
         version = f.read().strip()
     logger.info(f"Текущая загруженная из репозитория версия модели {MODEL_NAME}: {version}")
     return version
+
 
 def _get_registry_latest_model_version():
     client = mlflow.tracking.MlflowClient()
