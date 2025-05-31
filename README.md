@@ -1,0 +1,1 @@
+![Python tests](https://github.com/ARLukmanova/medical-image-processing/actions/workflows/test-classification-service.yml/badge.svg)
