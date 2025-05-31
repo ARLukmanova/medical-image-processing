@@ -80,7 +80,8 @@ st.markdown("""
 st.markdown("<h1 class='title'>Анализ рентгеновских снимков на пневмонию</h1>", unsafe_allow_html=True)
 st.markdown("""
     <div style="text-align: center; margin-bottom: 30px;">
-        Загрузите рентгеновские снимки грудной клетки, и мы определим, есть ли признаки пневмонии, используя гибридную модель.
+        Загрузите рентгеновские снимки грудной клетки, и мы определим,
+        есть ли признаки пневмонии, используя гибридную модель.
     </div>
 """, unsafe_allow_html=True)
 
@@ -124,8 +125,7 @@ def get_prediction_results(task_id):
 
 # Функция для создания графика (показывает только Hybrid)
 def create_probability_plot(pneumonia_prob, normal_prob):
-    # Reduced figsize for a smaller plot
-    fig, ax = plt.subplots(figsize=(4, 2)) # Changed from (8, 4) to (6, 3)
+    fig, ax = plt.subplots(figsize=(4, 2))
 
     labels = ['Норма', 'Пневмония']
     probabilities = [normal_prob, pneumonia_prob]
@@ -144,11 +144,11 @@ def create_probability_plot(pneumonia_prob, normal_prob):
 uploaded_files = st.file_uploader(
     "Выберите рентгеновские снимки (JPG/PNG)",
     type=["jpg", "jpeg", "png"],
-    accept_multiple_files=True, # Key change here!
+    accept_multiple_files=True,  # Key change here!
     help="Загрузите один или несколько рентгеновских снимков грудной клетки для анализа"
 )
 
-if uploaded_files: # Check if any files are uploaded
+if uploaded_files:  # Check if any files are uploaded
     # Button to trigger analysis for all uploaded files
     if st.button("Анализировать все снимки", type="primary"):
         st.subheader("Результаты анализа:")
@@ -169,7 +169,6 @@ if uploaded_files: # Check if any files are uploaded
                     if result:
                         prediction = result.get("prediction", {})
                         recommendation = result.get("recommendation", {})
-                        #plot_image_base64 = result.get("plot_image")
 
                         diagnosis_class_name = prediction.get("class", "Неизвестно")
                         pneumonia_probability = prediction.get("pneumonia_probability", 0.0)
@@ -203,19 +202,7 @@ if uploaded_files: # Check if any files are uploaded
 
                         st.markdown("</div>", unsafe_allow_html=True)
 
-                        #if plot_image_base64:
-                        #    try:
-                        #        plot_bytes = base64.b64decode(plot_image_base64)
-                        #        st.image(plot_bytes, caption="График вероятностей от гибридной модели", use_container_width=True)
-                        #    except Exception as e:
-                        #        st.error(f"Ошибка при отображении графика для {uploaded_file.name}: {e}")
-                        #else:
-                        #    fig = create_probability_plot(pneumonia_probability, normal_probability)
-                        #    if fig:
-                        #        st.pyplot(fig)
-                        #        plt.close(fig) # Close the figure to free up memory
-
-                    st.markdown("---") # Separator for clarity between image results
+                    st.markdown("---")
 
 # --- Global Interpretation and Sidebar ---
 with st.expander("Как интерпретировать результаты"):
@@ -231,7 +218,8 @@ with st.expander("Как интерпретировать результаты")
 # Информация о приложении в сайдбаре
 st.sidebar.markdown("""
 ### О приложении
-Это приложение использует **гибридную нейросеть** для анализа рентгеновских снимков грудной клетки на признаки пневмонии.
+Это приложение использует **гибридную нейросеть** для анализа рентгеновских
+снимков грудной клетки на признаки пневмонии.
 
 **Используемая модель:**
 - **Hybrid** (комбинация CNN и ViT)
@@ -246,6 +234,6 @@ st.sidebar.markdown("""
 
 st.sidebar.markdown("""
 ### Обратная связь
-Обнаружили проблему или есть предложения?  
+Обнаружили проблему или есть предложения?
 Напишите нам: AlinaLukmanova@gmail.com
 """)

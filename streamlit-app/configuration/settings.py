@@ -1,5 +1,3 @@
-from socket import send_fds
-
 from pydantic_settings import BaseSettings
 
 
@@ -18,5 +16,6 @@ class Settings(BaseSettings):
 
     def get_prediction_result_endpoint(self, task_id: str):
         return self.prediction_service_url + f"predict_status/{task_id}"
+
 
 settings = Settings()
