@@ -14,7 +14,7 @@ async def predict_endpoint(file: UploadFile = File(...)) -> JSONResponse:
         logger.info(f"Получен запрос на классификацию от {file.filename}")
 
         file_bytes = await file.read()
-        task = celery_app.send_task("predict_task.predict_task", args=[file_bytes, file.filename])
+        task = celery_app.send_task("worker.predict_task.predict_task", args=[file_bytes, file.filename])
         return JSONResponse(content={
             "task_id": task.id,
             "status": "processing",
