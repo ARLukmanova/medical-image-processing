@@ -41,6 +41,7 @@ services:
       - MyNet
     ports:
       - "9001:8000"
+    command: uvicorn api.app:app --host 0.0.0.0 --port 8000
 
   worker:
     image: arlukmanova/classification-service:latest
@@ -52,7 +53,7 @@ services:
       - .env
     networks:
       - MyNet
-    command: celery -A celery_app worker --loglevel=info --concurrency=1
+    command: celery -A worker.predict_task.celery_app worker --loglevel=info --concurrency=1
 
   flower:
     image: mher/flower:latest
