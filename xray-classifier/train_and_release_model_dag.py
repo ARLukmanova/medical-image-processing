@@ -29,6 +29,7 @@ def train_model_with_logging():
     from data_loader import get_data_bundle
     from parameters import MODEL_NAME, USE_GPU
     from train_model import train_model
+    from evaluate_model import evaluate_model
     from track_model import save_model_as_onnx_file
     import mlflow
     import torch
@@ -52,6 +53,8 @@ def train_model_with_logging():
         model_name=MODEL_NAME,
         dry_run=not USE_GPU,
     )
+
+    evaluate_model(model, data_bundle.loaders.test)
 
     run_id = active_run.info.run_id
     mlflow.end_run()

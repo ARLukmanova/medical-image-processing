@@ -5,3 +5,6 @@ transformers
 dvc[s3]
 onnx
 onnxruntime
+tqdm
+scikit-learn
+numpy

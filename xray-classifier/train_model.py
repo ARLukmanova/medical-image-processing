@@ -155,7 +155,7 @@ def _run_train_loop(
     # Логируем итоговую метрику качества и время обучения
     total_time = time.time() - total_start_time
     mlflow.log_metrics({
-        "best_accuracy": best_accuracy,
+        "best_val_accuracy": best_accuracy,
         "total_training_time": total_time
     })
 
