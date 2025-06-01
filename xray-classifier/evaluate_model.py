@@ -7,10 +7,10 @@ from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_sc
 def evaluate_model(model, test_loader):
     y_true, y_pred, y_scores = _run_evaluation_loop(model, test_loader)
 
-    accuracy = accuracy_score(y_true, y_pred)
-    precision = precision_score(y_true, y_pred)
-    recall = recall_score(y_true, y_pred)
-    f1 = f1_score(y_true, y_pred)
+    accuracy = 100* accuracy_score(y_true, y_pred)
+    precision = 100 * precision_score(y_true, y_pred)
+    recall = 100 * recall_score(y_true, y_pred)
+    f1 = 100 * f1_score(y_true, y_pred)
 
     mlflow.log_metrics({
         'accuracy': accuracy,
