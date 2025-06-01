@@ -2,6 +2,8 @@ name: test classification-service
 
 on:
   push:
+    branches:
+      - '**'
     paths:
       - 'classification-service/**'
   workflow_dispatch:
