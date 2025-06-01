@@ -3,6 +3,7 @@ from worker.model import Model
 from worker.model_registry_tools import init_mlflow, ensure_model_file_exists
 from worker.parameters import CLASS_NAMES
 from worker.plot_tools import create_probability_plot
+from worker.s3_tools import save_image_to_s3
 
 init_mlflow()
 ensure_model_file_exists()
@@ -13,6 +14,7 @@ model = Model()
 def predict_task(image_bytes, filename):
     pred = model.predict(image_bytes)
     plot_base64 = create_probability_plot(pred['probabilities'])
+    save_image_to_s3(image_bytes, filename)
 
     pneumonia_prob = pred['probabilities'][1]  # Вероятность пневмонии
     is_pneumonia = pred['prediction'] == 1
