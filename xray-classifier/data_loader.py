@@ -89,8 +89,11 @@ def _create_data_bundle(
         transforms.ToTensor(),
     ])
 
-    train_data_aug = datasets.ImageFolder(root=train_data_root_folder, transform=train_transform_aug)
-    train_data_aug, _ = random_split(train_data_aug, [train_size, val_size], generator=generator)
+     # Создаем аугментированную версию ТОЛЬКО тренировочных данных
+    train_data_aug = Subset(
+        datasets.ImageFolder(root=train_data_root_folder, transform=train_transform_aug),
+        indices=train_data_base.indices  # те же индексы, что и у train_data
+    )
 
     # Комбинированные наборы данных
     combined_train_data = ConcatDataset([train_data_base, train_data_aug])
