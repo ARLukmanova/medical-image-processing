@@ -1,21 +1,9 @@
 services:
-  redis:
-    image: redis:5.0-alpine
-    networks:
-      - MyNet
-    healthcheck:
-      test: [ "CMD", "redis-cli", "ping" ]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-      start_period: 30s
-    restart: on-failure
-
   bot:
     image: arlukmanova/tg-bot:latest
     restart: on-failure
     environment:
-      - PREDICTION_SERVICE_URL=http://service:8000/
+      - PREDICTION_SERVICE_URL=http://api:8000/
     env_file:
       - .env
     networks:
@@ -25,13 +13,13 @@ services:
     image: arlukmanova/streamlit-app:latest
     restart: on-failure
     environment:
-      - PREDICTION_SERVICE_URL=http://service:8000/
+      - PREDICTION_SERVICE_URL=http://api:8000/
     networks:
       - MyNet
     ports:
       - "9000:8501"
 
-  service:
+  api:
     image: arlukmanova/classification-service:latest
     restart: on-failure
     environment:
@@ -56,6 +44,18 @@ services:
     networks:
       - MyNet
     command: celery -A worker.predict_task.celery_app worker --loglevel=info --concurrency=1
+
+  redis:
+    image: redis:5.0-alpine
+    networks:
+      - MyNet
+    healthcheck:
+      test: [ "CMD", "redis-cli", "ping" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    restart: on-failure
 
   flower:
     image: mher/flower:latest
