@@ -63,9 +63,11 @@ def _get_registry_latest_model_version_and_uri():
           f"доступна в MLFlow Model Registry по URI: {model_uri}")
     return model_uri, model_version
 
+
 def _save_model_name_with_version(model_version):
     with open("model_version.txt", "w", encoding="utf-8") as f:
         f.write(f"{MODEL_NAME} v.{model_version}\n")
+
 
 class ProgressPercentage(object):
     def __init__(self, filename, size):
