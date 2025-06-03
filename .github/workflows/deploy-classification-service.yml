@@ -79,5 +79,5 @@ jobs:
           password: ${{ secrets.SERVER_PASSWORD }}
           script: |
             cd ~/medical-image-processing
-            sudo docker compose pull
-            sudo docker compose up -d
+            docker compose pull
+            docker compose up -d
