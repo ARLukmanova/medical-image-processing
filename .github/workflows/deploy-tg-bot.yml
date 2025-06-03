@@ -14,7 +14,7 @@ jobs:
 
   build-and-push:
     uses: ./.github/workflows/build-and-publish-component.yml
-      with:
-        component-name: tg-bot
-        git-tag-name: bot
+    with:
+      component-name: tg-bot
+      git-tag-name: bot
 

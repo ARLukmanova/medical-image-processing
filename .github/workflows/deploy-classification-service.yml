@@ -14,6 +14,6 @@ jobs:
 
   build-and-push:
     uses: ./.github/workflows/build-and-publish-component.yml
-      with:
-        component-name: classification-service
-        git-tag-name: service
+    with:
+      component-name: classification-service
+      git-tag-name: service
