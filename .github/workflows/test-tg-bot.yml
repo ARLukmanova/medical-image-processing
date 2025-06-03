@@ -1,4 +1,4 @@
-name: test test-tg-bot 
+name: test tg-bot 
 
 on:
   push:
