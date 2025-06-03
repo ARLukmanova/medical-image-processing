@@ -1,0 +1,15 @@
+name: test and lint streamlit-app
+
+on:
+  push:
+    branches:
+      - '**'
+    paths:
+      - 'streamlit-app/**'
+  workflow_dispatch:
+
+jobs:
+  test-and-lint:
+    uses: ./.github/workflows/test-and-lint-component.yml
+    with:
+      component-name: streamlit-app

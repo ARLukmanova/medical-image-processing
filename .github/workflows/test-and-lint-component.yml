@@ -34,4 +34,4 @@ jobs:
         run: flake8 .
 
       - name: Run tests
-        run: pytest
+        run: pytest --allow-no-tests
