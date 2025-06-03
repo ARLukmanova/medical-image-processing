@@ -2,8 +2,8 @@ from pydantic_settings import BaseSettings
 
 
 class Settings(BaseSettings):
-    prediction_service_url: str
-    tg_bot_token: str
+    prediction_service_url: str = 'unset'
+    tg_bot_token: str = 'unset'
 
     def __init__(self, **values):
         super().__init__(**values)
@@ -20,3 +20,6 @@ class Settings(BaseSettings):
 
 
 settings = Settings()
+TIMEOUT = 30
+RESULT_POLLING_MAX_RETRIES = 30
+MAX_FILE_SIZE = 10 * 1024 * 1024  # 10MB
