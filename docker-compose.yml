@@ -44,6 +44,8 @@ services:
     networks:
       - MyNet
     command: celery -A worker.predict_task.celery_app worker --loglevel=info --concurrency=1
+    deploy:
+      replicas: 3
 
   redis:
     image: redis:5.0-alpine
