@@ -8,7 +8,6 @@ import sys
 
 MLFLOW_HOST = "188.72.77.22"
 MLFLOW_PORT = "5050"
-MODEL_DIR = "models"
 MODEL_FILENAME = "model.onnx"
 MODEL_NAME = "xray-hybrid-classifier"
 LATEST_MODEL_VERSION_ALIAS = "current"
@@ -17,12 +16,12 @@ LATEST_MODEL_VERSION_ALIAS = "current"
 def download_model():
     _init_mlflow()
     try:
-        os.makedirs(MODEL_DIR, exist_ok=True)
+        os.makedirs(model_dir, exist_ok=True)
         model_uri, model_version = _get_registry_latest_model_version_and_uri()
         print(f"Скачиваем модель {MODEL_NAME} v{model_version} из MLFlow Model Registry")
 
         _download_from_s3(model_uri)
-        print(f"Модель {MODEL_NAME} v{model_version} успешно скачана в {MODEL_DIR}")
+        print(f"Модель {MODEL_NAME} v{model_version} успешно скачана в {model_dir}")
 
     except Exception as e:
         print(f"Ошибка при скачивании модели из MLFlow Model Registry: {e}")
@@ -44,7 +43,7 @@ def _download_from_s3(model_uri):
     s3_key = parsed.path.lstrip('/')
     head = s3.head_object(Bucket=bucket, Key=s3_key)
     file_size = head['ContentLength']
-    model_path = os.path.join(MODEL_DIR, MODEL_FILENAME)
+    model_path = os.path.join(model_dir, MODEL_FILENAME)
     s3.download_file(bucket, s3_key, model_path, Callback=ProgressPercentage(s3_key, file_size))
 
 
@@ -77,6 +76,7 @@ class ProgressPercentage(object):
 
 
 if __name__ == "__main__":
-    aws_access_key_id = sys.argv[1] if len(sys.argv) > 1 else None
-    aws_secret_access_key = sys.argv[2] if len(sys.argv) > 2 else None
+    model_dir = sys.argv[1] if len(sys.argv) > 1 else None
+    aws_access_key_id = sys.argv[2] if len(sys.argv) > 2 else None
+    aws_secret_access_key = sys.argv[3] if len(sys.argv) > 3 else None
     download_model()
