@@ -26,7 +26,7 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install mlflow, boto3, tqdm
+          pip install mlflow boto3 tqdm
 
       - name: Donload model from MLFlow Model Registry
         run: |
