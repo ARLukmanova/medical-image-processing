@@ -78,6 +78,6 @@ jobs:
           username: ${{ secrets.SERVER_USER }}
           password: ${{ secrets.SERVER_PASSWORD }}
           script: |
-          cd ~/medical-image-processing
-          docker compose pull
-          docker compose up -d
+            cd ~/medical-image-processing
+            docker compose pull
+            docker compose up -d
