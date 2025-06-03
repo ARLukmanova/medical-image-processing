@@ -14,5 +14,6 @@ async def main():
     finally:
         await bot.close()
 
+
 if __name__ == '__main__':
     asyncio.run(main())

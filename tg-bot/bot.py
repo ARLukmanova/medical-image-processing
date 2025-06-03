@@ -237,6 +237,3 @@ async def handle_document(message: Message):
                 await bot.delete_message(chat_id=message.chat.id, message_id=processing_msg.message_id)
             except Exception as e:
                 logger.error(f"Ошибка при удалении сообщения обработки: {e}", exc_info=True)
-
-
-
