@@ -1,4 +1,4 @@
-name: test and list classification-service 
+name: test and lint classification-service 
 
 on:
   push:
@@ -9,7 +9,7 @@ on:
   workflow_dispatch:
 
 jobs:
-  test:
+  test-and-lint:
     uses: ./.github/workflows/test-and-lint-component.yml
     with:
       component-name: classification-service

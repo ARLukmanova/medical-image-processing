@@ -9,7 +9,7 @@ on:
   workflow_dispatch:
 
 jobs:
-  test:
+  test-and-lint:
     uses: ./.github/workflows/test-and-lint-component.yml
     with:
       component-name: tg-bot
