@@ -17,3 +17,6 @@ jobs:
     with:
       component-name: classification-service
       git-tag-name: service
+    secrets:
+      DOCKERHUB_LOGIN: ${{ secrets.DOCKERHUB_LOGIN }}
+      DOCKERHUB_PAT: ${{ secrets.DOCKERHUB_PAT }}

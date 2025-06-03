@@ -9,6 +9,12 @@ on:
       git-tag-name:
         required: true
         type: string
+    secrets:
+      DOCKERHUB_LOGIN:
+        required: true
+      DOCKERHUB_PAT:
+        required: true
+      
 
 jobs:
   build-and-push:

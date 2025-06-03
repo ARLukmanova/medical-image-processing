@@ -17,4 +17,7 @@ jobs:
     with:
       component-name: tg-bot
       git-tag-name: bot
+    secrets:
+      DOCKERHUB_LOGIN: ${{ secrets.DOCKERHUB_LOGIN }}
+      DOCKERHUB_PAT: ${{ secrets.DOCKERHUB_PAT }}
 
