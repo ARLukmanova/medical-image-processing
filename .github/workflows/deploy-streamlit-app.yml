@@ -13,6 +13,7 @@ jobs:
       component-name: streamlit-app
 
   build-and-push:
+    needs: test-and-lint
     uses: ./.github/workflows/build-and-publish-component.yml
     with:
       component-name: streamlit-app
