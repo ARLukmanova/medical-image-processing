@@ -23,10 +23,11 @@ def download_model():
         _download_from_s3(model_uri)
         print(f"Модель {MODEL_NAME} v{model_version} успешно скачана в {model_dir}")
 
+        _save_model_name_with_version(model_version)
+
     except Exception as e:
         print(f"Ошибка при скачивании модели из MLFlow Model Registry: {e}")
         raise RuntimeError(f"Не удалось скачать модель из MLflow: {e}")
-    return model_version
 
 
 def _download_from_s3(model_uri):
@@ -62,6 +63,9 @@ def _get_registry_latest_model_version_and_uri():
           f"доступна в MLFlow Model Registry по URI: {model_uri}")
     return model_uri, model_version
 
+def _save_model_name_with_version(model_version):
+    with open("model_version.txt", "w", encoding="utf-8") as f:
+        f.write(f"{MODEL_NAME} v.{model_version}\n")
 
 class ProgressPercentage(object):
     def __init__(self, filename, size):

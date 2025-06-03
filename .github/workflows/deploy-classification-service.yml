@@ -33,6 +33,10 @@ jobs:
         run: |
           python3 ./classification-service/worker/download_model.py ./classification-service/models ${{ secrets.AWS_ACCESS_KEY_ID }} ${{ secrets.AWS_SECRET_ACCESS_KEY }}
 
+      - name: Read model name and version
+        id: get_model_version
+        run: echo "MODEL_NAME_AND_VERSION=$(cat model_version.txt)" >> $GITHUB_ENV
+
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
@@ -60,3 +64,5 @@ jobs:
           tags: |
             ${{ secrets.DOCKERHUB_LOGIN }}/classification-service:${{ env.IMAGE_TAG }}
             ${{ secrets.DOCKERHUB_LOGIN }}/classification-service:latest
+          labels: |
+            model.version=${{ env.MODEL_NAME_AND_VERSION }}
